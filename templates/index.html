@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Futures Market News</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            padding: 25px;
+        }
+        h1, h2 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        .section {
+            margin-bottom: 30px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 20px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .news-list {
+            margin-top: 20px;
+        }
+        .news-item {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-left: 3px solid #3498db;
+            background-color: #f5f5f5;
+        }
+        .news-item a {
+            color: #2980b9;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .news-item a:hover {
+            text-decoration: underline;
+        }
+        .search-box {
+            display: flex;
+            margin-bottom: 15px;
+        }
+        .search-box input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px 0 0 4px;
+            font-size: 14px;
+        }
+        .search-box button {
+            border-radius: 0 4px 4px 0;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            margin: 10px auto;
+            display: none;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .date-display {
+            text-align: right;
+            font-style: italic;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+        }
+        .error-message {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="date-display" id="today-date">{{ today }}</div>
+        <h1>Futures Market News</h1>
+        
+        <div class="section">
+            <h2>Top Futures Market News</h2>
+            <button id="get-news-btn">Fetch Latest News</button>
+            <div id="futures-news-loader" class="loader"></div>
+            <div id="futures-news" class="news-list"></div>
+        </div>
+        
+        <div class="section">
+            <h2>Search Currency News</h2>
+            <div class="search-box">
+                <input type="text" id="currency-input" placeholder="Enter currency (e.g., USD, Euro, Bitcoin)">
+                <button id="search-currency-btn">Search</button>
+            </div>
+            <div id="currency-news-loader" class="loader"></div>
+            <div id="currency-news" class="news-list"></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const getFuturesNewsBtn = document.getElementById('get-news-btn');
+            const searchCurrencyBtn = document.getElementById('search-currency-btn');
+            const currencyInput = document.getElementById('currency-input');
+            const futuresNewsLoader = document.getElementById('futures-news-loader');
+            const currencyNewsLoader = document.getElementById('currency-news-loader');
+            
+            // Function to display news items
+            function displayNews(news, containerId) {
+                const container = document.getElementById(containerId);
+                container.innerHTML = '';
+                
+                if (news.length === 0) {
+                    container.innerHTML = '<p>No results found.</p>';
+                    return;
+                }
+                
+                news.forEach(item => {
+                    const newsItem = document.createElement('div');
+                    newsItem.className = 'news-item';
+                    
+                    const link = document.createElement('a');
+                    link.href = item.url;
+                    link.target = '_blank';
+                    link.textContent = item.title;
+                    
+                    newsItem.appendChild(link);
+                    container.appendChild(newsItem);
+                });
+            }
+            
+            // Get futures news
+            getFuturesNewsBtn.addEventListener('click', function() {
+                futuresNewsLoader.style.display = 'block';
+                document.getElementById('futures-news').innerHTML = '';
+                
+                fetch('/get_futures_news')
+                    .then(response => response.json())
+                    .then(data => {
+                        futuresNewsLoader.style.display = 'none';
+                        displayNews(data.news, 'futures-news');
+                    })
+                    .catch(error => {
+                        futuresNewsLoader.style.display = 'none';
+                        document.getElementById('futures-news').innerHTML = '<p class="error-message">Error fetching news. Please try again.</p>';
+                        console.error('Error:', error);
+                    });
+            });
+            
+            // Search currency news
+            searchCurrencyBtn.addEventListener('click', searchCurrency);
+            currencyInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    searchCurrency();
+                }
+            });
+            
+            function searchCurrency() {
+                const currency = currencyInput.value.trim();
+                if (!currency) {
+                    document.getElementById('currency-news').innerHTML = '<p class="error-message">Please enter a currency code or name.</p>';
+                    return;
+                }
+                
+                currencyNewsLoader.style.display = 'block';
+                document.getElementById('currency-news').innerHTML = '';
+                
+                fetch(`/search_currency?currency=${encodeURIComponent(currency)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        currencyNewsLoader.style.display = 'none';
+                        if (data.error) {
+                            document.getElementById('currency-news').innerHTML = `<p class="error-message">${data.error}</p>`;
+                        } else {
+                            displayNews(data.news, 'currency-news');
+                        }
+                    })
+                    .catch(error => {
+                        currencyNewsLoader.style.display = 'none';
+                        document.getElementById('currency-news').innerHTML = '<p class="error-message">Error fetching news. Please try again.</p>';
+                        console.error('Error:', error);
+                    });
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Futures Market News</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Top Futures Market News</h1>
+
+    <form method="POST">
+        <input type="text" name="currency" placeholder="Search Currency (e.g., USD, EUR)">
+        <button type="submit">Search</button>
+    </form>
+
+    <ul>
+        {% for item in news %}
+            <li><a href="{{ item.url }}" target="_blank">{{ item.title }}</a></li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
